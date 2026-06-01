@@ -5,8 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ivvklimov/image-previewer/internal/cache"
 	"github.com/ivvklimov/image-previewer/internal/config"
 	"github.com/ivvklimov/image-previewer/internal/logger"
+	"github.com/ivvklimov/image-previewer/internal/proxy"
+	"github.com/ivvklimov/image-previewer/internal/resizer"
 )
 
 // HTTP-сервер с поддержкой graceful shutdown.
@@ -19,13 +22,20 @@ type Server struct {
 func NewServer(host string, port int, log *logger.Logger, cfg *config.Config) *Server {
 	mux := http.NewServeMux()
 
-	// Создаём хэндлер с внедрёнными зависимостями
-	h := NewHandler(log, cfg)
+	// 1. Инициализация зависимостей
+	diskCache := cache.NewDiskCache(cfg.Cache.Dir)
+	proxyFetcher := proxy.NewFetcher(
+		proxy.WithTimeout(cfg.Server.ReadTimeout), // Используем таймаут из конфига
+	)
+	imageResizer := resizer.NewResizer()
 
-	// Роуты
+	// 2. Создаём хэндлер с внедрёнными зависимостями
+	h := NewHandler(log, cfg, diskCache, proxyFetcher, imageResizer)
+
+	// 3. Роуты
 	mux.HandleFunc("GET /fill/{width}/{height}/{url...}", h.HandlePreview)
 
-	// Применяем middleware логирования
+	// 4. Применяем middleware логирования
 	handler := LoggingMiddleware(log, mux)
 
 	return &Server{
