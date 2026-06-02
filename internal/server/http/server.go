@@ -2,6 +2,7 @@ package internalhttp
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -23,7 +24,8 @@ func NewServer(host string, port int, log *logger.Logger, cfg *config.Config) *S
 	mux := http.NewServeMux()
 
 	// 1. Инициализация зависимостей
-	diskCache := cache.NewDiskCache(cfg.Cache.Dir)
+	diskCache := cache.NewDiskCache(cfg.Cache.Dir, cfg.Cache.LimitBytes)
+	log.Info(fmt.Sprintf("cache initialized: dir=%s, limit_bytes=%d", cfg.Cache.Dir, cfg.Cache.LimitBytes))
 	proxyFetcher := proxy.NewFetcher(
 		proxy.WithTimeout(cfg.Server.ReadTimeout), // Используем таймаут из конфига
 	)
