@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// makeTestJPEG создаёт тестовое JPEG-изображение.
+// Создаёт тестовое JPEG-изображение.
 func makeTestJPEG(t *testing.T, width, height int) []byte {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
@@ -31,7 +31,7 @@ func makeTestJPEG(t *testing.T, width, height int) []byte {
 
 func TestHandler_HandlePreview_Integration(t *testing.T) {
 	// 1. Поднимаем HTTPS тестовый сервер (так как хендлер жёстко добавляет "https://")
-	upstream := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	upstream := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
 		_, _ = w.Write(makeTestJPEG(t, 600, 300))
 	}))
@@ -50,7 +50,7 @@ func TestHandler_HandlePreview_Integration(t *testing.T) {
 
 	// 3. Инициализируем реальные зависимости для теста
 	tmpDir := t.TempDir()
-	diskCache := cache.NewDiskCache(tmpDir)
+	diskCache := cache.NewDiskCache(tmpDir, 10<<20) // 10 МБ лимит для теста
 
 	// Передаём наш кастомный клиент в прокси
 	proxyFetcher := proxy.NewFetcher(proxy.WithHTTPClient(insecureClient))

@@ -1,0 +1,31 @@
+linters:
+  enable:
+    - godot
+    - depguard
+    - errcheck
+    - gofmt
+    - govet
+    - staticcheck
+    - revive
+    - unused
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        # Указываем, к каким файлам применять правило
+        files:
+          - "$all"  # Применять ко всем .go файлам в проекте
+        
+        # Внутри правила
+        list-type: allowlist
+        
+        # Список разрешённых пакетов
+        allow:
+          - "$gostd"  # Стандартная библиотека
+          - "github.com/ivvklimov/image-previewer"  # Весь наш модуль
+          - "github.com/disintegration/imaging"
+          - "github.com/jmoiron/sqlx"
+          - "github.com/lib/pq"
+          - "gopkg.in/yaml.v3"
+          - "github.com/stretchr/testify"

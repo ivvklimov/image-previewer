@@ -10,5 +10,5 @@ server:
 
 cache:
   dir: "./cache"
-  limit_bytes: 1073741824 # 1 GB по умолчанию
+  limit_bytes: 102400  # 100Kb
   

@@ -13,7 +13,7 @@ import (
 )
 
 func TestFetcher_Fetch_Success(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
 		_, _ = w.Write([]byte{0xFF, 0xD8, 0xFF, 0xE0})
 	}))
@@ -52,7 +52,7 @@ func TestFetcher_Fetch_ProxiesHeaders(t *testing.T) {
 }
 
 func TestFetcher_Fetch_NotFound(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -73,7 +73,7 @@ func TestFetcher_Fetch_ServerError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tt.code)
 			}))
 			defer srv.Close()
@@ -96,7 +96,7 @@ func TestFetcher_Fetch_InvalidMimeType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				if tt.ct != "" {
 					w.Header().Set("Content-Type", tt.ct)
 				}
@@ -112,7 +112,7 @@ func TestFetcher_Fetch_InvalidMimeType(t *testing.T) {
 }
 
 func TestFetcher_Fetch_TooLarge(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
 		_, _ = w.Write(make([]byte, 2048))
 	}))
@@ -124,7 +124,7 @@ func TestFetcher_Fetch_TooLarge(t *testing.T) {
 }
 
 func TestFetcher_Fetch_Timeout(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(200 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	}))
