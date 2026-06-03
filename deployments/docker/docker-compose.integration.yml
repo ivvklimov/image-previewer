@@ -1,0 +1,48 @@
+services:
+  upstream:
+    container_name: image-previewer-upstream-test
+    image: nginx:1.25-alpine
+    networks:
+      - image-previewer-test
+    volumes:
+      - ${PROJECT_ROOT}/fixtures:/usr/share/nginx/html:ro
+      - ${PROJECT_ROOT}/deployments/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${PROJECT_ROOT}/deployments/docker/nginx/certs/upstream.crt:/etc/nginx/certs/upstream.crt:ro
+      - ${PROJECT_ROOT}/deployments/docker/nginx/certs/upstream.key:/etc/nginx/certs/upstream.key:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "--spider", "-q", "https://localhost/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: "no"
+
+  app:
+    container_name: image-previewer-test
+    build:
+      context: ${PROJECT_ROOT}
+      dockerfile: deployments/docker/Dockerfile.integration
+      args:
+        RELEASE: test
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+        GIT_HASH: ${GIT_HASH:-dev}
+    networks:
+      - image-previewer-test
+    depends_on:
+      upstream:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      - CACHE_DIR=/app/cache
+      - CACHE_LIMIT_BYTES=102400  # 100Kb
+    volumes:
+      - cache_test_data:/app/cache
+    restart: "no"
+
+networks:
+  image-previewer-test:
+    driver: bridge
+
+volumes:
+  cache_test_data:

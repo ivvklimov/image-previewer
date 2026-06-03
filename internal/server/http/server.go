@@ -35,6 +35,7 @@ func NewServer(host string, port int, log *logger.Logger, cfg *config.Config) *S
 	h := NewHandler(log, cfg, diskCache, proxyFetcher, imageResizer)
 
 	// 3. Роуты
+	mux.HandleFunc("GET /health", h.HandleHealth)
 	mux.HandleFunc("GET /fill/{width}/{height}/{url...}", h.HandlePreview)
 
 	// 4. Применяем middleware логирования
