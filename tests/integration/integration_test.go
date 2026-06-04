@@ -20,7 +20,7 @@ const (
 	// Адрес нашего приложения (запущенного локально)
 	baseURL = "http://localhost:8090"
 	// Адрес тестового upstream (nginx в Docker, host network)
-	upstreamBaseURL = "upstream"
+	upstreamHost = "upstream"
 )
 
 // Формирует URL запроса к приложению.
@@ -57,7 +57,7 @@ func waitForService(url string, timeout time.Duration) {
 
 // 1. Удаленный сервер вернул изображение (успешный запрос, cache miss).
 func TestIntegration_UpstreamReturnsImage(t *testing.T) {
-	imageURL := upstreamBaseURL + "/gopher_original_1024x504.jpg"
+	imageURL := upstreamHost + "/gopher_original_1024x504.jpg"
 	url := buildURL(200, 200, imageURL)
 
 	resp, err := http.Get(url)
@@ -74,7 +74,7 @@ func TestIntegration_UpstreamReturnsImage(t *testing.T) {
 
 // 2. Картинка найдена в кэше (cache hit).
 func TestIntegration_CacheHit(t *testing.T) {
-	imageURL := upstreamBaseURL + "/gopher_original_1024x504.jpg"
+	imageURL := upstreamHost + "/gopher_original_1024x504.jpg"
 	url := buildURL(150, 150, imageURL)
 
 	// Первый запрос (cache miss)
@@ -112,7 +112,7 @@ func TestIntegration_UpstreamDoesNotExist(t *testing.T) {
 
 // 4. Удаленный сервер существует, но изображение не найдено (404).
 func TestIntegration_ImageNotFound(t *testing.T) {
-	imageURL := upstreamBaseURL + "/nonexistent_image.jpg"
+	imageURL := upstreamHost + "/nonexistent_image.jpg"
 	url := buildURL(200, 200, imageURL)
 
 	resp, err := http.Get(url)
@@ -124,20 +124,20 @@ func TestIntegration_ImageNotFound(t *testing.T) {
 
 // 5. Удаленный сервер существует, но файл не изображение.
 func TestIntegration_NotAnImage(t *testing.T) {
-	imageURL := upstreamBaseURL + "/file.txt" // <-- было /fake.exe
+	imageURL := upstreamHost + "/file.txt" // <-- было /fake.exe
 	url := buildURL(200, 200, imageURL)
 
 	resp, err := http.Get(url)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	// Ожидаем ошибку — приложение должно отвергнуть не-изображение
+	// Ожидаем ошибку - приложение должно отвергнуть не изображение
 	assert.NotEqual(t, http.StatusOK, resp.StatusCode, "should reject non-image files")
 }
 
 // 6. Удаленный сервер вернул ошибку (5xx).
 func TestIntegration_UpstreamServerError(t *testing.T) {
-	imageURL := upstreamBaseURL + "/error"
+	imageURL := upstreamHost + "/error"
 	url := buildURL(200, 200, imageURL)
 
 	resp, err := http.Get(url)
@@ -149,7 +149,7 @@ func TestIntegration_UpstreamServerError(t *testing.T) {
 
 // 7. Изображение меньше нужного размера (upscale).
 func TestIntegration_ImageSmallerThanRequested(t *testing.T) {
-	imageURL := upstreamBaseURL + "/tiny.jpg"
+	imageURL := upstreamHost + "/tiny.jpg"
 	// Запрашиваем размер больше оригинала (оригинал 10x10, просим 200x200)
 	url := buildURL(200, 200, imageURL)
 
@@ -157,8 +157,6 @@ func TestIntegration_ImageSmallerThanRequested(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	// Приложение должно либо успешно увеличить изображение, либо вернуть ошибку — зависит от ТЗ
-	// Обычно ресайзеры умеют увеличивать (upscale)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "should handle upscale")
 }
 
@@ -171,9 +169,9 @@ func TestIntegration_InvalidParameters(t *testing.T) {
 		path string
 		want int
 	}{
-		{"zero width", "/fill/0/200/" + upstreamBaseURL + "/gopher_original_1024x504.jpg", http.StatusBadRequest},
-		{"zero height", "/fill/200/0/" + upstreamBaseURL + "/gopher_original_1024x504.jpg", http.StatusBadRequest},
-		{"negative width", "/fill/-1/200/" + upstreamBaseURL + "/gopher_original_1024x504.jpg", http.StatusBadRequest},
+		{"zero width", "/fill/0/200/" + upstreamHost + "/gopher_original_1024x504.jpg", http.StatusBadRequest},
+		{"zero height", "/fill/200/0/" + upstreamHost + "/gopher_original_1024x504.jpg", http.StatusBadRequest},
+		{"negative width", "/fill/-1/200/" + upstreamHost + "/gopher_original_1024x504.jpg", http.StatusBadRequest},
 		{"missing url", "/fill/200/200/", http.StatusBadRequest},
 	}
 
@@ -189,7 +187,7 @@ func TestIntegration_InvalidParameters(t *testing.T) {
 
 // Конкурентные запросы (проверка потокобезопасности).
 func TestIntegration_ConcurrentRequests(t *testing.T) {
-	imageURL := upstreamBaseURL + "/ingress-lens.png"
+	imageURL := upstreamHost + "/ingress-lens.png"
 	url := buildURL(100, 100, imageURL)
 
 	const numRequests = 20
@@ -234,7 +232,7 @@ func TestIntegration_ContentTypeMatchesFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
-			imageURL := upstreamBaseURL + "/" + tt.file
+			imageURL := upstreamHost + "/" + tt.file
 			url := buildURL(100, 100, imageURL)
 
 			resp, err := http.Get(url)
