@@ -1,0 +1,30 @@
+version: '3.8'
+
+networks:
+  image-previewer:
+    driver: bridge
+
+services:
+  app:
+    container_name: image-previewer
+    build:
+      context: ${PROJECT_ROOT}
+      dockerfile: deployments/docker/Dockerfile
+      args:
+        RELEASE: prod
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+        GIT_HASH: ${GIT_HASH:-dev}
+    networks:
+      - image-previewer
+    ports:
+      - "8080:8080"  # Прямой доступ к Go-приложению
+    volumes:
+      - cache_data:/app/cache
+    environment:
+      - CACHE_DIR=/app/cache
+      # Здесь можно переопределить лимиты для прода, если нужно
+      # - CACHE_LIMIT_BYTES=104857600 
+    restart: unless-stopped
+
+volumes:
+  cache_data:

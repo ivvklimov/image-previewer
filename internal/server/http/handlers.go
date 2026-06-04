@@ -113,6 +113,12 @@ func (h *Handler) HandlePreview(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(resizedData)
 }
 
+// Обрабатывает health-check запросы.
+func (h *Handler) HandleHealth(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("OK"))
+}
+
 // Маппит доменные ошибки прокси в HTTP-статусы.
 func (h *Handler) handleProxyError(w http.ResponseWriter, err error, url string) {
 	switch {
