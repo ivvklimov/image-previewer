@@ -110,7 +110,7 @@ func (f *Fetcher) Fetch(ctx context.Context, url string, originalHeaders http.He
 
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBadGateway, err)
+		return nil, fmt.Errorf("%w: %w", ErrBadGateway, err)
 	}
 	defer resp.Body.Close()
 

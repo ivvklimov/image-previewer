@@ -59,12 +59,12 @@ func (r *Resizer) Fill(src []byte, width, height int) ([]byte, error) {
 
 	format, err := detectFormat(src)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrUnsupportedFormat, err)
+		return nil, fmt.Errorf("%w: %w", ErrUnsupportedFormat, err)
 	}
 
 	img, err := imaging.Decode(bytes.NewReader(src), imaging.AutoOrientation(true))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrDecode, err)
+		return nil, fmt.Errorf("%w: %w", ErrDecode, err)
 	}
 
 	bounds := img.Bounds()

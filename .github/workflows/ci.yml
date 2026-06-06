@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.8
+          args: --timeout=5m
+
+      - name: Run unit tests with race detector
+        run: go test -race -count=100 -timeout=10m ./...
+
+      - name: Build binary
+        run: |
+          mkdir -p bin
+          go build -ldflags="-X github.com/ivvklimov/image-previewer/internal/version.Release=ci-${{ github.sha }} -X github.com/ivvklimov/image-previewer/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X github.com/ivvklimov/image-previewer/internal/version.GitHash=${{ github.sha }}" -o bin/image-previewer ./cmd/server/main.go
+          ./bin/image-previewer --version
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run integration tests
+        run: make integration-test
