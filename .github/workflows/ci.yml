@@ -46,7 +46,7 @@ jobs:
       - name: Build binary
         run: |
           mkdir -p bin
-          go build -ldflags="-X github.com/ivvklimov/image-previewer/internal/version.Release=${{ github.ref_name }} -X github.com/ivvklimov/image-previewer/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X github.com/ivvklimov/image-previewer/internal/version.GitHash=${{ github.sha }}" -o bin/${{ env.BINARY_NAME }} ./cmd/server/main.go
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/ivvklimov/image-previewer/internal/version.Release=${{ github.ref_name }} -X github.com/ivvklimov/image-previewer/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X github.com/ivvklimov/image-previewer/internal/version.GitHash=${{ github.sha }}" -o bin/${{ env.BINARY_NAME }} ./cmd/server/main.go
           chmod +x bin/${{ env.BINARY_NAME }}
           ./bin/${{ env.BINARY_NAME }} --version
 
