@@ -27,7 +27,13 @@ type Handler struct {
 }
 
 // Создаёт новый обработчик с внедрёнными зависимостями.
-func NewHandler(log *logger.Logger, cfg *config.Config, c *cache.DiskCache, p *proxy.Fetcher, r *resizer.Resizer) *Handler {
+func NewHandler(
+	log *logger.Logger,
+	cfg *config.Config,
+	c *cache.DiskCache,
+	p *proxy.Fetcher,
+	r *resizer.Resizer,
+) *Handler {
 	return &Handler{logger: log, cfg: cfg, cache: c, proxy: p, resizer: r}
 }
 

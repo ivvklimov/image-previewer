@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  GO_VERSION: '1.23'
+  GOLANGCI_LINT_VERSION: v1.64.8
+  BINARY_NAME: image-previewer
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Для корректного git hash
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=5m
+
+      - name: Run unit tests (verbose)
+        run: go test -race -count=1 -v -timeout=1m ./...
+
+      - name: Run unit tests (stress & race check)
+        run: go test -race -count=100 -timeout=10m ./...
+
+      - name: Build binary
+        run: |
+          mkdir -p bin
+          go build -ldflags="-X github.com/ivvklimov/image-previewer/internal/version.Release=${{ github.ref_name }} -X github.com/ivvklimov/image-previewer/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X github.com/ivvklimov/image-previewer/internal/version.GitHash=${{ github.sha }}" -o bin/${{ env.BINARY_NAME }} ./cmd/server/main.go
+          chmod +x bin/${{ env.BINARY_NAME }}
+          ./bin/${{ env.BINARY_NAME }} --version
+
+      - name: Prepare release archive
+        run: |
+          mkdir -p release
+          cp bin/${{ env.BINARY_NAME }} release/
+          cp configs/config.yaml release/
+          cp README.md release/
+          cd release && tar -czf ../${{ env.BINARY_NAME }}-linux-amd64.tar.gz *
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-linux-amd64
+          path: ${{ env.BINARY_NAME }}-linux-amd64.tar.gz
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload raw binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-binary
+          path: bin/${{ env.BINARY_NAME }}
+          retention-days: 14
+          if-no-files-found: error
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run integration tests
+        run: make integration-test
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, integration-tests]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/${{ env.BINARY_NAME }}-linux-amd64/${{ env.BINARY_NAME }}-linux-amd64.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

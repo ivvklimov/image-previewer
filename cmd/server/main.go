@@ -35,46 +35,50 @@ func main() {
 		return
 	}
 
-	// 2. Загружаем базовый конфиг из файла
+	// 2. Запускаем основную логику
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// Содержит всю логику инициализации и запуска.
+// Возвращает ошибку, если что-то пошло не так.
+func run() error {
+	// 1. Загружаем базовый конфиг из файла
 	cfg, err := config.Load[config.Config](configFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// 3. Применяем ENV-переменные (приоритет над файлом)
+	// 2. Применяем ENV-переменные (приоритет над файлом)
 	config.ApplyAPIEnvOverrides(cfg)
 
-	// 4. Валидация конфига (fail-fast)
+	// 3. Валидация конфига (fail-fast)
 	if err := config.ValidateAPI(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Config validation failed: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("config validation failed: %w", err)
 	}
 
-	// 5. Инициализация логгера
+	// 4. Инициализация логгера
 	log := logger.New(cfg.Logger.Level, "image-previewer")
 	log.Info(fmt.Sprintf("Starting image-previewer (version: %s)", version.String()))
 
-	// 6. Инициализация директории кэша
-	if err := os.MkdirAll(cfg.Cache.Dir, 0755); err != nil {
-		log.Error(fmt.Sprintf("failed to create cache directory %s: %v", cfg.Cache.Dir, err))
-		os.Exit(1)
+	// 5. Инициализация директории кэша
+	if err := os.MkdirAll(cfg.Cache.Dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create cache directory %s: %w", cfg.Cache.Dir, err)
 	}
 
-	// 7. Создание HTTP-сервера
+	// 6. Создание HTTP-сервера
 	server := internalhttp.NewServer("", cfg.Server.Port, log, cfg)
 
-	// 8. Контекст с graceful shutdown
+	// 7. Контекст с graceful shutdown
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
 	log.Info("image-previewer is running...")
 
-	// 9. Запуск сервера (блокирующий)
-	if err := server.Start(ctx); err != nil {
-		log.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1)
-	}
+	// 8. Запуск сервера (блокирующий).
+	// Возвращает ошибку, если не удалось запуститься, или nil при штатной остановке.
+	return server.Start(ctx)
 }

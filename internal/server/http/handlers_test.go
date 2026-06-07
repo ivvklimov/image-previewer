@@ -43,7 +43,7 @@ func TestHandler_HandlePreview_Integration(t *testing.T) {
 	// 2. Настраиваем прокси-клиент, который игнорирует ошибки самоподписанных сертификатов тестового сервера
 	insecureClient := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // для тестов, самоподписанный сертификат
 		},
 		Timeout: 10 * time.Second,
 	}

@@ -1,24 +1,16 @@
-linters:
-  enable:
-    - godot
-    - depguard
-    - errcheck
-    - gofmt
-    - govet
-    - staticcheck
-    - revive
-    - unused
+run:
+  tests: true
 
 linters-settings:
+  funlen:
+    lines: 150
+    statements: 80
   depguard:
     rules:
       main:
         # Указываем, к каким файлам применять правило
         files:
           - "$all"  # Применять ко всем .go файлам в проекте
-        
-        # Внутри правила
-        list-type: allowlist
         
         # Список разрешённых пакетов
         allow:
@@ -29,3 +21,65 @@ linters-settings:
           - "github.com/lib/pq"
           - "gopkg.in/yaml.v3"
           - "github.com/stretchr/testify"
+  tagliatelle:
+    case:
+      rules:
+        yaml: snake  # Для YAML требуем snake_case
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bodyclose
+    # - deadcode  # Полностью удалён из golangci-lint
+    - depguard
+    - dogsled
+    - dupl
+    - durationcheck
+    - errorlint
+    - exhaustive
+    # - exportloopref  # deprecated (since v1.60.2) due to: Since Go1.22
+    - funlen
+    - gci
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gofmt
+    - gofumpt
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    # - ifshort  # Полностью удалён из golangci-lint
+    - importas
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nestif
+    - nilerr
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    # - structcheck  # Полностью удалён из golangci-lint
+    - stylecheck
+    - tagliatelle
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    # - varcheck  # Полностью удалён из golangci-lint
+    - wastedassign
+    - whitespace

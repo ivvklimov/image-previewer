@@ -74,7 +74,7 @@ func (c *DiskCache) restoreFromDisk() {
 		name string
 		info os.FileInfo
 	}
-	var validFiles []fileInfo
+	validFiles := make([]fileInfo, 0, len(files))
 
 	for _, f := range files {
 		if f.IsDir() || strings.HasPrefix(f.Name(), ".") || strings.HasSuffix(f.Name(), ".tmp") {
@@ -227,7 +227,7 @@ func (c *DiskCache) atomicWrite(key string, data []byte) error {
 	target := c.path(key)
 	tmp := target + ".tmp"
 
-	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		return fmt.Errorf("create tmp: %w", err)
 	}
